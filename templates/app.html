@@ -1,0 +1,50 @@
+{# Main app #}
+{# Variables sent via Flask/Jinja are delimited by  "[[" and "]]" #}
+
+{% extends 'base.html' %}
+{% block app %}
+<div id="app"></div>
+
+<script type="module">
+  // import Vue
+  import { createApp } from "./static/js/vue_3.5.29_esm-browser.js"
+
+    /* main app */
+  const app = createApp({
+    data: function() {},
+    template: /* html */ `
+      Hello [[ user ]] @ {{ new Date }} 
+      <br>
+      <my-component />
+    `
+  })
+
+  /* my-component */
+  app.component(
+    "my-component",
+    {
+      props: [],
+      data: function() {
+        return {
+            range: Array(1)
+        }
+      },
+      created() {},
+      template: /* html */ `
+        <div id="my-component">
+          my component
+          <input type="button" value="add item" @click="this.range.push(1)"></input>
+          <li v-for="i in range.keys()">
+            item {{ i+1 }}
+          </li>
+        <div>
+      `,
+      mounted() {},
+      updated() {}
+    }
+  )
+
+  app.mount("#app")
+</script>
+
+{% endblock %}
