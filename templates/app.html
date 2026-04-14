@@ -1,9 +1,9 @@
 {# This is a Jinja template with a Vue app embedded #}
-{# Variables sent via Flask/Jinja are delimited by  "[[" and "]]" in order to 
-avoid conflicting with the Vue template delimiters #}
+{# Variables sent via Flask/Jinja are delimited by  custom chars "[[" and "]]"
+in order to avoid conflicting with the Vue template delimiters #}
 
 {% extends 'base.html' %}
-{% block app %}
+{% block content %}
 <div id="app"></div>
 
 <script type="module">
@@ -11,10 +11,11 @@ avoid conflicting with the Vue template delimiters #}
   import { createApp } from "./static/js/vue_3.5.29_esm-browser.js"
   import { createPinia, defineStore, mapStores } from "./static/js/pinia_3.0.4_esm-browser.js"
 
-  /* Vue main app using the Options API */
-  // https://vuejs.org/api/options-state.html */
+  /* Create Vue main app using the Options API */
+  // https://vuejs.org/api/options-state.html
+  // 
   const app = createApp({
-    data: function() {},
+    data: () => {},
     template: /* html */ `
       Hello [[ user ]] @ {{ new Date }} 
       <br>
@@ -22,8 +23,9 @@ avoid conflicting with the Vue template delimiters #}
     `
   })
 
-  /* Pinia state manager using option stores */
+  /* Create Pinia state manager using option stores */
   // https://pinia.vuejs.org/core-concepts/#Option-Stores
+  // Set component data fields to Pinia store objects for reactivity.
   const pinia = createPinia()
   const useMyStore = defineStore("myStore", {
     state: () => ({
@@ -38,6 +40,9 @@ avoid conflicting with the Vue template delimiters #}
   })
   // register the Pinia object with the Vue app
   app.use(pinia)
+
+  /* Components */
+  // Vue components defined below
 
   /* my-component */
   app.component(

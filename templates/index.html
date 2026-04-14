@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% block content %}
 <div>
-    hello, {{ user }}!
+    hello, [[ user ]]!
+    <br>
+    <a href="[[ url_for('app') ]]">App</a>
 </div>
 {% endblock %}

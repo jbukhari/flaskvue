@@ -1,2 +1,2 @@
 # flaskvue
-Custom template for a flask app serving a Vue front end
+Custom template for a Flask app serving a Vue front end
