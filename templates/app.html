@@ -1,0 +1,72 @@
+{# This is a Jinja template with a Vue app embedded #}
+{# Variables sent via Flask/Jinja are delimited by  "[[" and "]]" in order to 
+avoid conflicting with the Vue template delimiters #}
+
+{% extends 'base.html' %}
+{% block app %}
+<div id="app"></div>
+
+<script type="module">
+  // import Vue and Pinia
+  import { createApp } from "./static/js/vue_3.5.29_esm-browser.js"
+  import { createPinia, defineStore, mapStores } from "./static/js/pinia_3.0.4_esm-browser.js"
+
+  /* Vue main app using the Options API */
+  // https://vuejs.org/api/options-state.html */
+  const app = createApp({
+    data: function() {},
+    template: /* html */ `
+      Hello [[ user ]] @ {{ new Date }} 
+      <br>
+      <my-component />
+    `
+  })
+
+  /* Pinia state manager using option stores */
+  // https://pinia.vuejs.org/core-concepts/#Option-Stores
+  const pinia = createPinia()
+  const useMyStore = defineStore("myStore", {
+    state: () => ({
+      count: 1
+    }),
+    getters: {
+      double: (state) => state.count * 2 
+    },
+    actions: {
+      inc() {this.count++}
+    },
+  })
+  // register the Pinia object with the Vue app
+  app.use(pinia)
+
+  /* my-component */
+  app.component(
+    "my-component",
+    {
+      props: [],
+      data: () => {
+        return {
+            range: Array(1),
+            myStore: useMyStore()
+        }
+      },
+      created() {},
+      template: /* html */ `
+        <div id="my-component">
+          my component {{ myStore.count }}
+          <input type="button" value="add item" @click="this.range.push(1)"></input>
+          <input type="button" value="add count" @click="this.myStore.inc()"></input>
+          <li v-for="i in range.keys()">
+            item {{ i+1 }}
+          </li>
+        </div>
+      `,
+      mounted() {},
+      updated() {}
+    }
+  )
+
+  app.mount("#app")
+</script>
+
+{% endblock %}
