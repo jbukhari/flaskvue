@@ -16,11 +16,11 @@ CORS(APP)
 
 @APP.route('/')
 def index():
-    return render_template('index.html', user='me')
+    return render_template('index.html', user='user')
 
 @APP.route('/app')
 def main_app():
-    return render_template('app.html', user='me')
+    return render_template('app.html', user='user')
 
 ### API
 # Flask-RESTX

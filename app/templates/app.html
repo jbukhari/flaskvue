@@ -14,9 +14,7 @@
   // The app has no attributes except for the template calling the main component.
   const app = createApp({
     template: /* html */ `
-      <div id="app-container">
-        <main-component />
-      </div>
+      <main-component />
     `
   })
 
@@ -28,9 +26,9 @@
   // Set component data fields to Pinia store objects for reactivity.
   const pinia = createPinia()
   const useMainStore = defineStore("mainStore", {
-    state: () => ({count: 1}), // the reactive data
-    getters: {double: (state) => state.count * 2},
-    actions: {inc() {this.count++}},
+    state: () => ({items: []}), // the reactive data
+    getters: {count: (state) => state.items.length},
+    actions: {addItem(item) {this.items.push(item)}},
   })
   // Register the Pinia object with the Vue app
   app.use(pinia)
@@ -77,8 +75,7 @@
       },
       template: /* html */ `
         <div id=sidebar-component>
-          SIDEBAR<br>
-          count: [[ this.mainStore.count ]]
+          SIDEBAR
         </div>
       `
     }
@@ -99,18 +96,6 @@
         <div id="content-component  ">    
           <h3>main component</h3>
           <p>hello {{ user }}</p>
-          <p>
-            <input type="button" value="add count" @click="this.mainStore.inc()"></input>
-            count: [[ this.mainStore.count ]]
-          </p>
-          <p>
-            <input type="button" value="add item" @click="this.range.push(1)"></input>
-          </p>
-          <ul>
-            <li v-for="i in range.keys()">
-              item [[ i+1 ]]
-            </li>
-          </ul>
         </div>
       `,
       mounted() {},
