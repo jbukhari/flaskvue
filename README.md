@@ -9,10 +9,10 @@ The Flask app uses [Flask-RESTX](https://flask-restx.readthedocs.io/en/latest/) 
 
 The Flask app serves the Vue app via a standard [Jinja2](https://pypi.org/project/Jinja2/) HTML template, where the Vue app is embedded in the `<script>` element. The HTML is rendered with the API URL as a variable, which the Vue app can use to make asynchronous API requests. ~~[Flask-Login](https://flask-login.readthedocs.io/en/latest/) handles authorizing requests to the API from the back end~~ (not implemented yet).
 
-~~[Pytest](https://docs.pytest.org/en/stable/) tests for testing the API routes are provided. A [GitHub Actions](https://docs.github.com/en/actions/get-started/understand-github-actions workflow) file is set up to automatically run the tests on all pull requests and changes to the main branch~~ (not implemented yet). 
+~~[Pytest](https://docs.pytest.org/en/stable/) tests for the API routes are provided. A [GitHub Actions](https://docs.github.com/en/actions/get-started/understand-github-actions) workflow file is set up to automatically run the tests on all pull requests and changes to the main branch~~ (not implemented yet). 
 
 ### Vue
-As discussed, the Vue app is deployed directly to the front end [without a build step](https://vuejs.org/guide/extras/ways-of-using-vue.html#standalone-script).
+As discussed, the Vue app is deployed directly to the front end, meaning it is deployed [without a build step](https://vuejs.org/guide/extras/ways-of-using-vue.html#standalone-script).
 
 The Vue app is set up as a [single-page application (SPA)](https://developer.mozilla.org/en-US/docs/Glossary/SPA). A "main" component and three subcomponents for page header, sidebar, and content are provided. Components can share reactive state data using a pre-built [Pinia](https://pinia.vuejs.org/introduction.html) data store. Components can make asynchronous calls to the API using `fetch`.
 
