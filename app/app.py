@@ -14,15 +14,15 @@ from app import models
 ### Conventional routes
 APP = Flask(__name__)
 CORS(APP)
-EXTERNAL_JS = not os.environ.get('EXTERNAL_JS') or False # default to loading JS from external sources
-INTERNAL_JS_PATH = '../static/js' 
+INTERNAL_JS = os.environ.get('INTERNAL_JS')
+INTERNAL_JS_PATH = getattr(Config, 'INTERNAL_JS_PATH', None) if INTERNAL_JS else None
 
 @APP.context_processor
 def supply_js_sources():
     return {
-        'vue_src': 'https://unpkg.com/vue@3.5.29/dist/vue.esm-browser.js' if EXTERNAL_JS else f'{INTERNAL_JS_PATH}/vue_3.5.29_esm-browser.js',
-        'vue_devtools_src': 'https://unpkg.com/@vue/devtools-api@8.1.1/dist/vue-devtools-api.esm-browser.js' if EXTERNAL_JS else f'{INTERNAL_JS_PATH}/vue-devtools-api_8.1.1_esm-browser.js',
-        'pinia_src': 'https://unpkg.com/pinia@3.0.4/dist/pinia.esm-browser.js' if EXTERNAL_JS else f'{INTERNAL_JS_PATH}/pinia_3.0.4_esm-browser.js'
+        'vue_src': f'{INTERNAL_JS_PATH}/vue_3.5.29_esm-browser.js' if INTERNAL_JS else 'https://unpkg.com/vue@3.5.29/dist/vue.esm-browser.js',
+        'vue_devtools_src': f'{INTERNAL_JS_PATH}/vue-devtools-api_8.1.1_esm-browser.js' if INTERNAL_JS else 'https://unpkg.com/@vue/devtools-api@8.1.1/dist/vue-devtools-api.esm-browser.js',
+        'pinia_src': f'{INTERNAL_JS_PATH}/pinia_3.0.4_esm-browser.js' if INTERNAL_JS else 'https://unpkg.com/pinia@3.0.4/dist/pinia.esm-browser.js' 
     }
 
 @APP.route('/')
