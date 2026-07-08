@@ -1,8 +1,19 @@
-<!DOCTYPE html>
+{# This is a Jinja template #}
+
+<!DOCTYPE html> 
 <html lang="en">
 <head>
     <title>my app</title>
     <link rel="stylesheet" href="../static/css/style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "vue": "{{ vue_src }}",
+                "@vue/devtools-api": "{{ vue_devtools_src }}",
+                "pinia": "{{ pinia_src }}"
+            }
+        }
+    </script>
 </head>
 <body>
     {% block content %}

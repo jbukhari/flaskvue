@@ -1,7 +1,8 @@
 # Routes are declared using both conventional Flask declaration and Flask-RESTX
 # declaration
 
-import json
+import os, json
+from pathlib import Path
 from flask import Flask, send_file, render_template, jsonify, request, Response, abort
 from flask_login import current_user, login_required
 from flask_cors import CORS
@@ -13,6 +14,17 @@ from app import models
 ### Conventional routes
 APP = Flask(__name__)
 CORS(APP)
+INTERNAL_JS = getattr(Config, 'INTERNAL_JS', False)
+INTERNAL_JS_DIR = getattr(Config, 'INTERNAL_JS_PATH', None) if INTERNAL_JS else None
+
+@APP.context_processor
+def supply_js_sources():
+    # Where the JS libraries will be loaded from
+    return {
+        'vue_src': f'{INTERNAL_JS_DIR}/vue_3.5.29_esm-browser.js' if INTERNAL_JS else Config.VUE_SRC,
+        'vue_devtools_src': f'{INTERNAL_JS_DIR}/vue-devtools-api_8.1.1_esm-browser.js' if INTERNAL_JS else Config.VUE_DEVTOOLS_SRC,
+        'pinia_src': f'{INTERNAL_JS_DIR}/pinia_3.0.4_esm-browser.js' if INTERNAL_JS else Config.PINIA_SRC
+    }
 
 @APP.route('/')
 def index():
