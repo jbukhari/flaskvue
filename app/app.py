@@ -15,14 +15,15 @@ from app import models
 APP = Flask(__name__)
 CORS(APP)
 INTERNAL_JS = os.environ.get('INTERNAL_JS')
-INTERNAL_JS_PATH = getattr(Config, 'INTERNAL_JS_PATH', None) if INTERNAL_JS else None
+INTERNAL_JS_DIR = getattr(Config, 'INTERNAL_JS_PATH', None) if INTERNAL_JS else None
 
 @APP.context_processor
 def supply_js_sources():
+    # where the JS libraries will be sourced from
     return {
-        'vue_src': f'{INTERNAL_JS_PATH}/vue_3.5.29_esm-browser.js' if INTERNAL_JS else 'https://unpkg.com/vue@3.5.29/dist/vue.esm-browser.js',
-        'vue_devtools_src': f'{INTERNAL_JS_PATH}/vue-devtools-api_8.1.1_esm-browser.js' if INTERNAL_JS else 'https://unpkg.com/@vue/devtools-api@8.1.1/dist/vue-devtools-api.esm-browser.js',
-        'pinia_src': f'{INTERNAL_JS_PATH}/pinia_3.0.4_esm-browser.js' if INTERNAL_JS else 'https://unpkg.com/pinia@3.0.4/dist/pinia.esm-browser.js' 
+        'vue_src': f'{INTERNAL_JS_DIR}/vue_3.5.29_esm-browser.js' if INTERNAL_JS else Config.VUE_SRC,
+        'vue_devtools_src': f'{INTERNAL_JS_DIR}/vue-devtools-api_8.1.1_esm-browser.js' if INTERNAL_JS else Config.VUE_DEVTOOLS_SRC,
+        'pinia_src': f'{INTERNAL_JS_DIR}/pinia_3.0.4_esm-browser.js' if INTERNAL_JS else Config.PINIA_SRC
     }
 
 @APP.route('/')
