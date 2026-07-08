@@ -14,12 +14,12 @@ from app import models
 ### Conventional routes
 APP = Flask(__name__)
 CORS(APP)
-INTERNAL_JS = os.environ.get('INTERNAL_JS')
+INTERNAL_JS = getattr(Config, 'INTERNAL_JS', False)
 INTERNAL_JS_DIR = getattr(Config, 'INTERNAL_JS_PATH', None) if INTERNAL_JS else None
 
 @APP.context_processor
 def supply_js_sources():
-    # where the JS libraries will be sourced from
+    # Where the JS libraries will be loaded from
     return {
         'vue_src': f'{INTERNAL_JS_DIR}/vue_3.5.29_esm-browser.js' if INTERNAL_JS else Config.VUE_SRC,
         'vue_devtools_src': f'{INTERNAL_JS_DIR}/vue-devtools-api_8.1.1_esm-browser.js' if INTERNAL_JS else Config.VUE_DEVTOOLS_SRC,

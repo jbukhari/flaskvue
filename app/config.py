@@ -12,5 +12,9 @@ class Config():
     VUE_DEVTOOLS_SRC = 'https://unpkg.com/@vue/devtools-api@8.1.1/dist/vue-devtools-api.esm-browser.js'
     PINIA_SRC = 'https://unpkg.com/pinia@3.0.4/dist/pinia.esm-browser.js'
 
+# Set config values from environment variables, if they exist.
 for key, value in os.environ.items():
-    setattr(Config, key, value)
+    if value.lower() in ['0', 'false', 'none', 'null']:
+        setattr(Config, key, None)
+    else:
+        setattr(Config, key, value)
