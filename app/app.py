@@ -1,7 +1,7 @@
 # Routes are declared using both conventional Flask declaration and Flask-RESTX
 # declaration
 
-import os, json
+import os, json, requests
 from pathlib import Path
 from flask import Flask, send_file, render_template, jsonify, request, Response, abort
 from flask_login import current_user, login_required
@@ -10,9 +10,10 @@ from flask_restx import Api, Resource, fields
 from flask_pydantic import validate
 from app.config import Config
 from app import models
+from app import commands
 
-### Conventional routes
 APP = Flask(__name__)
+Config.app = APP
 CORS(APP)
 INTERNAL_JS = getattr(Config, 'INTERNAL_JS', False)
 INTERNAL_JS_DIR = getattr(Config, 'INTERNAL_JS_PATH', None) if INTERNAL_JS else None
@@ -20,12 +21,44 @@ INTERNAL_JS_DIR = getattr(Config, 'INTERNAL_JS_PATH', None) if INTERNAL_JS else 
 @APP.context_processor
 def supply_js_sources():
     # Where the JS libraries will be loaded from
-    return {
-        'vue_src': f'{INTERNAL_JS_DIR}/vue_3.5.29_esm-browser.js' if INTERNAL_JS else Config.VUE_SRC,
-        'vue_devtools_src': f'{INTERNAL_JS_DIR}/vue-devtools-api_8.1.1_esm-browser.js' if INTERNAL_JS else Config.VUE_DEVTOOLS_SRC,
-        'pinia_src': f'{INTERNAL_JS_DIR}/pinia_3.0.4_esm-browser.js' if INTERNAL_JS else Config.PINIA_SRC
+    
+    def relative_path(path):
+        # Return path relative to the file with the importmap
+        return str(Path(path).relative_to(Path('../templates/base.html').resolve(), walk_up=True)).replace('../app', '')
+
+    return { 
+        'vue_src': relative_path(f'{INTERNAL_JS_DIR}/{Config.VUE_FN}') if INTERNAL_JS else Config.VUE_SRC,
+        'vue_devtools_src': relative_path(f'{INTERNAL_JS_DIR}/{Config.VUE_DEVTOOLS_FN}') if INTERNAL_JS else Config.VUE_DEVTOOLS_SRC,
+        'pinia_src': relative_path(f'{INTERNAL_JS_DIR}/{Config.PINIA_FN}') if INTERNAL_JS else Config.PINIA_SRC
     }
 
+    
+
+@APP.cli.command("download-js-modules")
+def download_js_modules():
+    """Download JS modules for internal use."""
+
+    js_modules = {
+        Config.VUE_FN: Config.VUE_SRC,
+        Config.VUE_DEVTOOLS_FN: Config.VUE_DEVTOOLS_SRC,
+        Config.PINIA_FN: Config.PINIA_SRC
+    }
+
+    js_dir = Config.INTERNAL_JS_PATH
+    os.makedirs(js_dir, exist_ok=True)
+
+    for filename, url in js_modules.items():
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            with open(os.path.join(js_dir, filename), 'wb') as f:
+                f.write(response.content)
+
+            print(f"Downloaded {filename} to {js_dir}")
+        else:
+            print(f"Failed to download {filename} from {url}")
+    
+### Conventional routes
 @APP.route('/')
 def index():
     return render_template('index.html', user='user')
@@ -34,7 +67,7 @@ def index():
 def main_app():
     return render_template('app.html', user='user')
 
-### API
+### API routes
 # Flask-RESTX
 API = Api(APP, doc='/api')
 NS = API.namespace('api', description='App API')
