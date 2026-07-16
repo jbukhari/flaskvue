@@ -19,14 +19,14 @@ class Base(BaseModel):
     @classmethod
     def schema_model(cls) -> SchemaModel:
         """Returns the model as a Flask-RESTX SchemaModel"""
-        from app.app import API
+        from app.api import API
         
         return API.schema_model('Record', cls.jsonschema())
     
     @classmethod
     def model(cls) -> Model:
         """Returns the model as a Flask-RESTX model"""
-        from app.app import API
+        from app.api import API
 
         type_map = {
             # Map of JSON Schema data types to Flask-RESTX types
