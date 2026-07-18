@@ -3,22 +3,12 @@
 
 import json
 from flask import abort, request, jsonify, Response, Blueprint
-from flask_restx import Api, Resource, fields
+from flask_restx import Api, Namespace, Resource, fields
 from flask_pydantic import validate
 from app import models
 
-API = Api(Blueprint('api', __name__, url_prefix='/api'), doc='/')
-NS = API.namespace('api', description='App API') # multiple namespaces can be added if api subsections are needed
-
-# All routes defined below come after "/api", set as an attribute to the 
-# blueprint.
-@NS.route('/')
-class Doc(Resource):
-    @NS.doc(description='API Documentation')
-    def get(self):
-        # Placeholder for the Swagger doc provided by Flask-RESTX, set using
-        # the "doc" argument to the Api object.
-        return {'message': 'The documentation is supposed to be supplied here by Flask-RESTX.'}
+API = Api(Blueprint('api', __name__), version='1.0', doc='/')
+NS = API.namespace('v1')
 
 @NS.route('/records')
 class Records(Resource):
