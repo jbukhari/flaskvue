@@ -8,7 +8,11 @@ commands = Blueprint('cmd', __name__)
 
 @commands.cli.command('download-js-modules')
 def download_js_modules():
-    """Download JS modules for internal use."""
+    """Downloads required JS modules to the location specified in config. Note
+    that they will not be used by the app unless the environment variable 
+    INTERNAL_JS is set to a truthy value when the app starts."""
+
+    print('Running...')
 
     js_modules = {
         Config.VUE_FN: Config.VUE_SRC,

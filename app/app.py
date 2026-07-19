@@ -14,7 +14,7 @@ from app.api import API
 
 Config.app = APP = Flask(__name__)
 APP.register_blueprint(commands)
-APP.register_blueprint(API.blueprint)
+APP.register_blueprint(API.blueprint, url_prefix='/api')
 CORS(APP)
 INTERNAL_JS = getattr(Config, 'INTERNAL_JS', False)
 INTERNAL_JS_DIR = getattr(Config, 'INTERNAL_JS_PATH', None) if INTERNAL_JS else None
