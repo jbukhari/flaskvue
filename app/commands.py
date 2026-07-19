@@ -10,6 +10,8 @@ commands = Blueprint('cmd', __name__)
 def download_js_modules():
     """Download JS modules for internal use."""
 
+    print('Running...')
+
     js_modules = {
         Config.VUE_FN: Config.VUE_SRC,
         Config.VUE_DEVTOOLS_FN: Config.VUE_DEVTOOLS_SRC,
