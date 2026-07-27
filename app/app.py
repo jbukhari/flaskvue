@@ -7,7 +7,6 @@ from pathlib import Path
 from flask import Flask, send_file, render_template, abort
 from flask_login import current_user, login_required
 from flask_cors import CORS
-from flask_pydantic import validate
 from app.config import Config
 from app.commands import commands
 from app.api import API

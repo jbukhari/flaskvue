@@ -2,7 +2,7 @@
 # can optionally be set using environment variables, which are stored in the
 # Config object.
 
-import pathlib, os, yaml
+import pathlib, os
 
 class Config():
     app = None
