@@ -4,7 +4,6 @@
 import json
 from flask import abort, request, jsonify, Response, Blueprint
 from flask_restx import Api, Namespace, Resource, fields
-from flask_pydantic import validate
 from app import models
 
 API = Api(Blueprint('api', __name__), version='1.0', doc='/')
