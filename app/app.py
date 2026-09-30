@@ -8,9 +8,11 @@ from flask import Flask, send_file, render_template, abort
 from flask_login import current_user, login_required
 from flask_cors import CORS
 from app.config import Config
+from app.db import DB
 from app.commands import commands
 from app.api import API
 
+### Setup
 Config.app = APP = Flask(__name__)
 APP.register_blueprint(commands)
 APP.register_blueprint(API.blueprint, url_prefix='/api')
@@ -27,7 +29,7 @@ def supply_js_sources():
         # Return path relative to the file with the importmap
         return str(Path(path).relative_to(Path('../templates/base.html').resolve(), walk_up=True)).replace('../app', '') # relative_to requires walkup but js import doesn't support walkup
 
-    return { 
+    return {
         'vue_src': relative_path(f'{INTERNAL_JS_DIR}/{Config.VUE_FN}') if INTERNAL_JS else Config.VUE_SRC,
         'vue_devtools_src': relative_path(f'{INTERNAL_JS_DIR}/{Config.VUE_DEVTOOLS_FN}') if INTERNAL_JS else Config.VUE_DEVTOOLS_SRC,
         'pinia_src': relative_path(f'{INTERNAL_JS_DIR}/{Config.PINIA_FN}') if INTERNAL_JS else Config.PINIA_SRC
@@ -41,3 +43,7 @@ def index():
 @APP.route('/app')
 def main_app():
     return render_template('app.html', user='user')
+
+@APP.route('/login')
+def login():
+    db = DB()
