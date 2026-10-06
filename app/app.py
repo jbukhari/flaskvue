@@ -5,10 +5,10 @@
 import json
 from pathlib import Path
 from flask import Flask, send_file, render_template, abort
-from flask_login import current_user, login_required
+from flask_login import LoginManager, current_user, login_required
 from flask_cors import CORS
 from app.config import Config
-from app.db import DB
+from app.db import DB, User
 from app.commands import commands
 from app.api import API
 
@@ -19,11 +19,16 @@ APP.register_blueprint(API.blueprint, url_prefix='/api')
 CORS(APP)
 INTERNAL_JS = getattr(Config, 'INTERNAL_JS', False)
 INTERNAL_JS_DIR = getattr(Config, 'INTERNAL_JS_PATH', None) if INTERNAL_JS else None
+LOGIN_MANAGER = LoginManager()
+LOGIN_MANAGER.init_app(APP)
 
-### Context processor
+@LOGIN_MANAGER.user_loader
+def load_user(user_id):
+    return User.get(user_id)
+
 @APP.context_processor
 def supply_js_sources():
-    # Where the JS libraries will be loaded from
+    # Allows Jinja templates to access JS libraries directory location
     
     def relative_path(path):
         # Return path relative to the file with the importmap
@@ -46,4 +51,4 @@ def main_app():
 
 @APP.route('/login')
 def login():
-    db = DB()
+    pass # db = DB()
