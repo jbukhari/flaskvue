@@ -1,44 +1,46 @@
 # Pytest fixtures
 
 import pytest
+from collections.abc import Generator
+from flask import Flask
+from flask.testing import FlaskClient, FlaskCliRunner
 from mongomock import MongoClient
 from app.app import APP
 from app.config import Config
+from app.db import DB, User
 
 ### Flask test utilities
 # https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
-def app():
+def app() -> Generator[Flask]:
     APP.config.update({
         "TESTING": True,
     })
 
-    # other setup can go here
+    # Setup here
 
     yield APP
 
-    # clean up / reset resources here
+    # Cleanup here
 
 @pytest.fixture()
-def client(app):
+def client(app) -> FlaskClient:
     return app.test_client()
 
 @pytest.fixture()
-def runner(app):
+def runner(app) -> FlaskCliRunner:
     return app.test_cli_runner()
 
 ### Database
 @pytest.fixture()
-def db():
-    from app.db import DB
+def db() -> Generator[DB]:
+    # Yields a DB instance then drops the database
 
-    # DB will use a mock database if we are in a testing environment
     db = DB()
-    assert isinstance(db.client, MongoClient)
+    assert isinstance(db.client, MongoClient) # DB uses a mock database if this is a testing environment
     database = db.client.get_database(Config.DATABASE_NAME)
 
-    # prepopulate test data here if needed
+    # Prepopulate test data here if needed
 
     yield db
     db.client.drop_database(Config.DATABASE_NAME)
-    

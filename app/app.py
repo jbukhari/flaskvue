@@ -4,8 +4,8 @@
 
 import json
 from pathlib import Path
-from flask import Flask, send_file, render_template, abort
-from flask_login import LoginManager, current_user, login_required
+from flask import Flask, send_file, render_template, abort, request
+from flask_login import LoginManager, current_user, login_required, login_user
 from flask_cors import CORS
 from app.config import Config
 from app.db import DB, User
@@ -24,11 +24,14 @@ LOGIN_MANAGER.init_app(APP)
 
 @LOGIN_MANAGER.user_loader
 def load_user(user_id):
+    # Implementation required by Flask-Login
     return User.get(user_id)
 
 @APP.context_processor
-def supply_js_sources():
-    # Allows Jinja templates to access JS libraries directory location
+def _context():
+    # Fields in the returned dict are available to all Jinja templates. This
+    # allows internal JavaScript source location to be set in Config.
+    # https://flask.palletsprojects.com/en/stable/templating/#context-processors
     
     def relative_path(path):
         # Return path relative to the file with the importmap
@@ -49,6 +52,13 @@ def index():
 def main_app():
     return render_template('app.html', user='user')
 
-@APP.route('/login')
+@APP.route('/login', methods=['GET', 'POST'])
 def login():
-    pass # db = DB()
+    if request.method == 'POST':
+        data = request.get_json()
+        user = User.get()
+        
+        #login_user(user=user, remember=False)
+        pass 
+
+    return '' 

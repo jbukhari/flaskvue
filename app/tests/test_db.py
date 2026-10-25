@@ -1,32 +1,30 @@
 
 import pytest
-from mongomock import MongoClient
 from app.config import Config
 
 def test_db(db):
+    from mongomock import MongoClient
     from app.db import DB
 
     assert isinstance(db, DB)
-    assert isinstance(db.client, MongoClient)
+    assert isinstance(db.client, MongoClient)  
 
-def test_interface(db):
-    from app.db import Collection, Document
+def test_user(db):
+    from mongomock import Collection
+    from pymongo.results import UpdateResult
+    from app.db import User
 
-    collection = db.database.get_collection('test')
-    collection.insert_one({'_id': 1})
-    Collection.name = 'test'
-    Collection.collection = collection
-    item = Collection.find_one({'_id': 1})
-    assert isinstance(item, Document)
+    # commit
+    user = User(name='testuser')
+    assert isinstance(user.collection, Collection)
+    result = user.commit()
+    assert isinstance(result, UpdateResult)
+    assert result.acknowledged
+    assert user.collection
 
-def test_users(db):
-    from app.db import Users
+    # delete
 
-    assert Users.find_one({'name': 'foo'}) is None
-    Users.add_user('foo')
-    user = Users.find_one({'name': 'foo'})
-    assert user.get('name') == 'foo'
-    assert user.get('password') is None
+
 
      
 
