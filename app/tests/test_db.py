@@ -52,11 +52,14 @@ def test_Document(db):
 
 def test_User(db):
     from app.db import Document, User
+    from flask_login import login_user
 
-    user = User(data={'name': 'testuser'})
+    user = User(data={'name': 'testuser', 'userId': 'testuser', 'password': 'x'})
     assert issubclass(User, Document)
+    assert user.commit()
+
     user.update_password()
-    user.login()
+    
 
 
 

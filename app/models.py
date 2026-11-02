@@ -49,6 +49,8 @@ class Record(Base):
     id: int
 
 class User(Base):
+    userId: str
+    password: str
     name: str
     email: str = None
-    password: str = None
+    

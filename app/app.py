@@ -3,8 +3,9 @@
 # Blueprint.
 
 import json
+from secrets import token_hex
 from pathlib import Path
-from flask import Flask, send_file, render_template, abort, request
+from flask import Flask, send_file, render_template, abort, request, Response, redirect, url_for
 from flask_login import LoginManager, current_user, login_required, login_user
 from flask_cors import CORS
 from app.config import Config
@@ -16,6 +17,7 @@ from app.api import API
 Config.app = APP = Flask(__name__)
 APP.register_blueprint(commands)
 APP.register_blueprint(API.blueprint, url_prefix='/api')
+APP.secret_key = Config.SECRET_KEY
 CORS(APP)
 INTERNAL_JS = getattr(Config, 'INTERNAL_JS', False)
 INTERNAL_JS_DIR = getattr(Config, 'INTERNAL_JS_PATH', None) if INTERNAL_JS else None
@@ -25,7 +27,7 @@ LOGIN_MANAGER.init_app(APP)
 @LOGIN_MANAGER.user_loader
 def load_user(user_id):
     # Implementation required by Flask-Login
-    return User.get(user_id)
+   return User.from_query({'userId': user_id})
 
 @APP.context_processor
 def _context():
@@ -54,11 +56,28 @@ def main_app():
 
 @APP.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        data = request.get_json()
-        user = User.get()
-        
-        #login_user(user=user, remember=False)
-        pass 
+    if Config.TESTING:
+        APP.secret_key = token_hex(24)
+    elif not Config.SECRET_KEY:
+        raise Exception('Environment variable "SECRET_KEY" required to start user session')
 
-    return '' 
+    if Config.DEV:
+        # Create a dev user
+        user = User({'userId': 'dev', 'name': 'dev', 'password': 'dev'})
+        user.commit()
+
+    if request.method == 'POST':
+        data = request.form.to_dict()
+        
+        if user := User.from_query({'userId': data.get('userId')}):
+            # todo: check password
+            login_user(user=user, remember=False)
+        else:
+            return 'Unrecognized username'
+
+        this = url_for("login", _external=True)
+        ref = request.referrer
+
+        return redirect(ref if ref and (ref != this) else url_for('index'))
+
+    return render_template('login.html')

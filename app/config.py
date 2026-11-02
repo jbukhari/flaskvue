@@ -2,11 +2,14 @@
 # can optionally be set using environment variables, which are stored in the
 # Config object.
 
-import pathlib, os
+import sys, os, pathlib, secrets
 
 class Config():
     APP = None # set when the app starts
-    DATABASE_CONNECTION_STRING = None # optionally set by environment variable
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    TESTING = 'pytest' in sys.modules
+    DEV = False # optionally override with environment variable
+    DATABASE_CONNECTION_STRING = None # optionally override with environment variable
     DATABASE_NAME = 'app'
     INTERNAL_JS = False # if set to true by environment variable, app uses local copy of JS source
     VUE_SRC = 'https://unpkg.com/vue@3.5.29/dist/vue.esm-browser.js'

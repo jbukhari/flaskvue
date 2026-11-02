@@ -65,14 +65,22 @@ class Document(metaclass=ABCMeta):
     data: Iterable
 
     def __post_init__(self):
-        assert isinstance(self.collection, MockCollection if 'pytest' in sys.modules else Collection)
+        assert isinstance(self.collection, (Collection, MockCollection))
         assert models.Base in self.model.__bases__
 
     @classmethod
-    def from_query(cls, query: dict) -> Self:
-        data = cls.collection.find_one(query)
-    
-        return cls(data)
+    def from_query(cls, query: dict) -> Self | None:
+        if not query:
+            data = None
+        else:    
+            data = cls.collection.find_one(query)
+
+        if data:
+            return cls(data)
+        
+        warn('No user found')
+
+        return
 
     def commit(self) -> UpdateResult:
         if not hasattr(self, 'data') or self.data is None:
@@ -101,6 +109,9 @@ class User(Document, UserMixin):
 
     collection: Collection = DB().get_collection('users')
     model: type[BaseModel] = models.User
+
+    def get_id(self):
+        return self.data.get('userId')
 
     def update_password(self):
         pass
