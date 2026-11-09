@@ -4,13 +4,25 @@ import pytest
 from collections.abc import Generator
 from flask import Flask
 from flask.testing import FlaskClient, FlaskCliRunner
+from flask_login import FlaskLoginClient
 from mongomock import MongoClient
 from app.app import APP
 from app.config import Config
 from app.db import DB, User
 
-### Flask test utilities
-# https://flask.palletsprojects.com/en/stable/testing/
+@pytest.fixture()
+def db() -> Generator[DB]:
+    # Yields a DB instance then drops the database
+
+    db = DB()
+    assert isinstance(db.client, MongoClient) # DB uses a mock database if this is a testing environment
+    database = db.client.get_database(Config.DATABASE_NAME)
+
+    # Prepopulate test data here if needed
+
+    yield db
+    db.client.drop_database(Config.DATABASE_NAME)
+
 @pytest.fixture()
 def app() -> Generator[Flask]:
     APP.config.update({
@@ -31,16 +43,19 @@ def client(app) -> FlaskClient:
 def runner(app) -> FlaskCliRunner:
     return app.test_cli_runner()
 
-### Database
 @pytest.fixture()
-def db() -> Generator[DB]:
-    # Yields a DB instance then drops the database
+def user(db) -> User:
+    User.collection = db.get_collection('test')
 
-    db = DB()
-    assert isinstance(db.client, MongoClient) # DB uses a mock database if this is a testing environment
-    database = db.client.get_database(Config.DATABASE_NAME)
+    return User.add_user('test', 'pw')
 
-    # Prepopulate test data here if needed
+@pytest.fixture()
+def client_logged_in(app, user) -> FlaskClient:
+    # Returns a Flask test client with a user already logged in
 
-    yield db
-    db.client.drop_database(Config.DATABASE_NAME)
+    app.test_client_class = FlaskLoginClient
+    user = User.add_user('x', 'yz')
+
+    return app.test_client(user=user)
+
+

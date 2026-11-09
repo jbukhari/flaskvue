@@ -50,7 +50,7 @@ class Record(Base):
 
 class User(Base):
     userId: str
-    password: str
-    name: str
+    passwordHash: str
+    name: str = None
     email: str = None
     

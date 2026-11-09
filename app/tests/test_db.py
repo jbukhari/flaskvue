@@ -52,17 +52,10 @@ def test_Document(db):
 
 def test_User(db):
     from app.db import Document, User
+    from pymongo.results import UpdateResult
     from flask_login import login_user
 
-    user = User(data={'name': 'testuser', 'userId': 'testuser', 'password': 'x'})
+    User.collection = db.client.get_database(Config.DATABASE_NAME).get_collection('users')
+    user = User.add_user('test', 'pw')
     assert issubclass(User, Document)
-    assert user.commit()
-
-    user.update_password()
-    
-
-
-
-
-     
-
+    assert isinstance(user.update_password('new_pw'), UpdateResult)

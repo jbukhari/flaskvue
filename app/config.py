@@ -6,7 +6,7 @@ import sys, os, pathlib, secrets
 
 class Config():
     APP = None # set when the app starts
-    SECRET_KEY = os.environ.get('SECRET_KEY')
+    SECRET_KEY = None # set by environment variable
     TESTING = 'pytest' in sys.modules
     DEV = False # optionally override with environment variable
     DATABASE_CONNECTION_STRING = None # optionally override with environment variable

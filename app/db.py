@@ -10,11 +10,12 @@ from dataclasses import dataclass
 from pymongo import MongoClient, CursorType
 from pymongo.database import Database as DatabaseHandle
 from pymongo.collection import Collection
-from pymongo.results import UpdateResult
+from pymongo.results import InsertOneResult, UpdateResult
 from bson.objectid import ObjectId
 from mongomock import MongoClient as MockClient, Collection as MockCollection
 from pydantic import BaseModel
-from flask_login import UserMixin
+from flask_login import UserMixin, login_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from app.config import Config
 from app import models
 
@@ -70,29 +71,23 @@ class Document(metaclass=ABCMeta):
 
     @classmethod
     def from_query(cls, query: dict) -> Self | None:
-        if not query:
-            data = None
-        else:    
-            data = cls.collection.find_one(query)
+        if not query: return None
 
-        if data:
+        if data := cls.collection.find_one(query):
             return cls(data)
-        
-        warn('No user found')
 
-        return
-
-    def commit(self) -> UpdateResult:
+    def commit(self) -> InsertOneResult | UpdateResult:
         if not hasattr(self, 'data') or self.data is None:
             raise Exception('Attribute "data" not set')
 
         self.model(**self.data)
+        to_commit = {k: self.data[k] for k in self.model.model_fields if k in self.data}
         
         if _id := self.data.get('_id'):
-            q = {'_id': self.data.get('_id')}
-            result = self.collection.replace_one(q, self.data)
+            q = {'_id': _id}
+            result = self.collection.replace_one(q, to_commit)
         else:
-            result = self.collection.insert_one(self.data)
+            result = self.collection.insert_one(to_commit)
             self.data['_id'] = result.inserted_id
 
         return result
@@ -110,12 +105,39 @@ class User(Document, UserMixin):
     collection: Collection = DB().get_collection('users')
     model: type[BaseModel] = models.User
 
-    def get_id(self):
+    @classmethod
+    def add_user(cls, user_id: str, password: str) -> Self:
+        if cls.collection.find_one({'userId': user_id}):
+            raise Exception(f'User "{user_id}" already exists')
+
+        self = cls(data={'userId': user_id, 'passwordHash': generate_password_hash(password)})
+        super(cls, self).commit()
+
+        return self
+    
+    def get_id(self) -> str:
         return self.data.get('userId')
 
-    def update_password(self):
-        pass
+    def commit(self) -> InsertOneResult | UpdateResult:
+        if self.data.get('_id') is None:
+            raise Exception('Can\'t add new user to the database with `User.commit`. Use `User.add_user`')
+        elif existing := self.collection.find_one({'_id': self.data['_id']}):
+            if self.data.get('password_hash') != existing['password_hash']:
+                raise Exception('Can\'t change password with `User.commit`. Use `User.update_password`')
 
-    def login(self):
-        pass
+        return super().commit()
+
+    def update_password(self, new_password: str) -> InsertOneResult | UpdateResult:
+        self.data['passwordHash'] = generate_password_hash(new_password)
+        
+        return super().commit()
+
+    def login(self, password: str) -> bool:
+        if self.data.get('_id') is None:
+            raise Exception('User is not in the system')
+
+        if not check_password_hash(self.data['passwordHash'], password):
+            return False
+        
+        return login_user(self)
     
