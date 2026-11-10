@@ -1,0 +1,21 @@
+{# This is a Jinja template #}
+
+{% extends 'base.html' %}
+{% block content %}
+<form action="{{ url_for('create_user') }}" method="POST">
+    <div>
+        <label for="userId">username:</label>
+        <input type="text" id="userId" name="userId" required>
+    </div>
+    <div>
+        <label for="password">password:</label>
+        <input type="password" id="password" name="password" required>
+    </div>
+    <div>
+        <label for="confirmPassword">confirm<br>password:</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required>
+    </div>
+    <br>
+    <button type="submit">create user</button>
+</form>
+{% endblock %} 

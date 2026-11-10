@@ -58,18 +58,13 @@ def main_app():
 def login():
     if current_user.is_authenticated:
         return 'Already logged in'
+    elif request.method == 'GET':
+        return render_template('login.html')
     
     if Config.TESTING or Config.DEV:
         APP.secret_key = token_hex(24)
     elif not Config.SECRET_KEY:
         raise Exception('Environment variable "SECRET_KEY" required  to start user sessions')
-    
-    if Config.DEV and not User.from_query({'userId': 'dev'}):
-        # Create a dev user if the db is starting blank
-        User.add_user('dev', 'dev')
-
-    if request.method == 'GET':
-        return render_template('login.html')
 
     # POST
     data = request.form.to_dict()
@@ -90,5 +85,28 @@ def login():
 @APP.route('/logout')
 def logout():
     logout_user()
+
+    return redirect(url_for('index'))
+
+@APP.route('/create_user', methods=['GET', 'POST'])
+def create_user():
+    if request.method == 'GET':
+        return render_template('create-user.html')
+
+    # POST
+    data = request.form.to_dict()
+    uid = data.get('userId')
+
+    if user := User.from_query({'userId': uid}):
+        abort(409, f'User "{uid}" already exists')
+
+    password = data.get('password')
+    confirm = data.get('confirmPassword')
+
+    if password != confirm:
+        abort(422, "Password confirmation not matching")
+
+    user = User.add_user(uid, password)
+    login_user(user)
 
     return redirect(url_for('index'))
