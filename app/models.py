@@ -47,3 +47,10 @@ class Base(BaseModel):
 
 class Record(Base):
     id: int
+
+class User(Base):
+    userId: str
+    passwordHash: str
+    name: str = None
+    email: str = None
+    

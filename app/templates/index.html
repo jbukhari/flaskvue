@@ -1,7 +1,15 @@
+{# This is a Jinja template #}
+
 {% extends 'base.html' %}
 {% block content %}
 <div>
-    hello, {{ user }}
+    hello, {{ current_user.get_id() or 'anon' }}
+    <br>
+    {% if current_user.is_authenticated %}
+        <a href="{{ url_for('logout') }}">Logout</a>
+    {% else %}
+        <a href="{{ url_for('login') }}">Login</a>
+    {% endif %}
     <br>
     <a href="{{ url_for('main_app') }}">App</a>
     <br>
