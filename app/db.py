@@ -136,8 +136,7 @@ class User(Document, UserMixin):
         if self.data.get('_id') is None:
             raise Exception('User is not in the system')
 
-        if not check_password_hash(self.data['passwordHash'], password):
-            return False
+        if check_password_hash(self.data['passwordHash'], password):
+            return login_user(self)
         
-        return login_user(self)
-    
+        return False
