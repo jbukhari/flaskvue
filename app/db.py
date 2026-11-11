@@ -13,7 +13,7 @@ from pymongo.collection import Collection
 from pymongo.results import InsertOneResult, UpdateResult
 from bson.objectid import ObjectId
 from mongomock import MongoClient as MockClient, Collection as MockCollection
-from pydantic import BaseModel
+from pydantic import BaseModel, validate_call
 from flask_login import UserMixin, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.config import Config
@@ -70,9 +70,8 @@ class Document(metaclass=ABCMeta):
         assert models.Base in self.model.__bases__
 
     @classmethod
+    @validate_call
     def from_query(cls, query: dict) -> Self | None:
-        if not query: return None
-
         if data := cls.collection.find_one(query):
             return cls(data)
 
@@ -106,6 +105,7 @@ class User(Document, UserMixin):
     model: type[BaseModel] = models.User
 
     @classmethod
+    @validate_call
     def add_user(cls, user_id: str, password: str) -> Self:
         if cls.collection.find_one({'userId': user_id}):
             raise Exception(f'User "{user_id}" already exists')
@@ -127,6 +127,7 @@ class User(Document, UserMixin):
 
         return super().commit()
 
+    @validate_call
     def update_password(self, new_password: str) -> InsertOneResult | UpdateResult:
         self.data['passwordHash'] = generate_password_hash(new_password)
         

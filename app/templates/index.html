@@ -6,15 +6,15 @@
     hello, {{ current_user.get_id() or 'anon' }}
     <br>
     {% if current_user.is_authenticated %}
-        <a href="{{ url_for('logout') }}">Logout</a>
+        <a href="{{ url_for('logout') }}">logout</a>
     {% else %}
-        <a href="{{ url_for('login') }}">Login</a>
+        <a href="{{ url_for('login') }}">login</a>
+        |
+        <a href="{{ url_for('create_user') }}">create user</a>
     {% endif %}
     <br>
     <a href="{{ url_for('main_app') }}">App</a>
     <br>
     <a href="{{ url_for('api.doc') }}">API</a>
-    <br>
-    <a href="{{ url_for('api.v1_records') }}">API/Records</a>
 </div>
 {% endblock %}

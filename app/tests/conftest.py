@@ -44,10 +44,11 @@ def runner(app) -> FlaskCliRunner:
     return app.test_cli_runner()
 
 @pytest.fixture()
-def user(db) -> User:
+def user(db) -> Generator[User]:
     User.collection = db.get_collection('test')
 
-    return User.add_user('test', 'pw')
+    yield User.add_user('test', 'pw')
+    User.collection.delete_many({})
 
 @pytest.fixture()
 def client_logged_in(app, user) -> FlaskClient:
