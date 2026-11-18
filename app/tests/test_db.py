@@ -1,5 +1,6 @@
 
 import pytest
+from datetime import datetime
 from app.config import Config
 
 def test_DB(db):
@@ -10,10 +11,10 @@ def test_DB(db):
     assert isinstance(db.client, MongoClient)
 
 def test_Document(db):
-    from pymongo.results import InsertOneResult
-    from pydantic import BaseModel
+    from pymongo.results import InsertOneResult, UpdateResult
     from pydantic import ValidationError
     from app.db import DB, Document
+    from app.models import Base
 
     class TestClass(Document): pass
 
@@ -22,40 +23,62 @@ def test_Document(db):
 
     del TestClass
 
-    class TestModel(BaseModel):
+    class TestModel(Base):
         test_field: str
 
     class TestClass(Document):
-        collection = DB().get_collection('test')
+        collection = db.get_collection('testDocs')
         model = TestModel
 
-        def __init__(self, data: dict):
-            self.data = data
-
-        @classmethod
-        def from_query(cls, query: dict):
-            data = cls.collection.find_one(query)
-
-            return TestClass(data=data)
-
-    doc = TestClass(data={'x': 1})
-
     with pytest.raises(ValidationError):
-        doc.commit()
+        TestClass(data={'x': 1}).commit()
 
     doc = TestClass(data={'test_field': 'value'})
     result = doc.commit()
-    assert isinstance(result, InsertOneResult)
+    assert isinstance(result[0], InsertOneResult)
+    assert isinstance(result[1], UpdateResult)
     _id = doc.data.get('_id')
-    doc = TestClass.from_query({'_id': _id})
-    assert doc.data['_id'] == _id
-
+    retrieved = TestClass.from_query({'_id': _id})
+    assert retrieved.data['_id'] == _id
+    def get_audit(__id): return retrieved.audit_collection.find_one({'_id': __id})
+    audit1 = get_audit(_id)
+    assert audit1['history'][0]['data'] == retrieved.data
+    retrieved.data['test_field'] = 'updated'
+    retrieved.commit()
+    audit2 = get_audit(_id)
+    assert isinstance(audit2['history'][1]['updated'], datetime)
+    assert audit2['history'][1]['data']['test_field'] == 'updated'
+    doc.delete()
+    assert doc.data.get('_id') is None
+    assert TestClass.from_query({'_id': _id}) is None
+    audit3 = get_audit(_id)
+    assert isinstance(audit3['deleted'], datetime)
+   
 def test_User(db):
     from app.db import Document, User
     from pymongo.results import UpdateResult
-    from flask_login import login_user
-
+    from werkzeug.security import check_password_hash
+    from flask_login import UserMixin
+    
     User.collection = db.client.get_database(Config.DATABASE_NAME).get_collection('users')
-    user = User.add_user('test', 'pw')
-    assert issubclass(User, Document)
-    assert isinstance(user.update_password('new_pw'), UpdateResult)
+
+    with pytest.raises(Exception, match='Can\'t add new user to the database with `User.commit`'):
+        User({'userId': 'x'}).commit()
+
+    assert isinstance(User.add_user('test', 'pw'), Document | User | UserMixin)
+    user = User.from_query({'userId': 'test'})
+    hash = user.data['passwordHash']
+    assert check_password_hash(hash, 'pw')
+
+    with pytest.raises(Exception, match='Can\'t change password with `User.commit`'):
+        user.data['passwordHash'] = 'illegal'
+        user.commit()
+
+    result = user.update_password('new_pw')
+    assert all([isinstance(x, UpdateResult) for x in result])
+    new_hash = user.data['passwordHash'] 
+    assert new_hash != hash
+    assert check_password_hash(new_hash, 'new_pw')
+
+    with pytest.raises(RuntimeError, match='Working outside of application context'):
+        user.login('new_pw')
