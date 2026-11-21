@@ -3,17 +3,17 @@
 
 import sys, os
 from warnings import warn
+from datetime import datetime, timezone
 from abc import ABCMeta, abstractmethod
 from typing import Self
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pymongo import MongoClient, CursorType
-from pymongo.database import Database as DatabaseHandle
+from pymongo.database import Database
 from pymongo.collection import Collection
-from pymongo.results import InsertOneResult, UpdateResult
-from bson.objectid import ObjectId
+from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 from mongomock import MongoClient as MockClient, Collection as MockCollection
-from pydantic import BaseModel, validate_call
+from pydantic import BaseModel, ConfigDict, validate_call
 from flask_login import UserMixin, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.config import Config
@@ -21,13 +21,12 @@ from app import models
 
 DBVAR = 'DATABASE_CONNECTION_STRING'
 
-class Identifier():
-    def __init__(self, *, field: str, value=None):
-        self.field = field
-        self.value = value
-
 class DB():
     """Interface to the database."""
+
+    connected: bool
+    client: MongoClient | MockClient
+    database: Database  
 
     def __init__(self):
         f"""Connects to the database using the connection string provided by
@@ -44,7 +43,7 @@ class DB():
             warn(f'Environment variable "{DBVAR}" not found. Connecting to Mongomock database"')
             self.client = MockClient()
 
-        self.database: DatabaseHandle = self.client.get_database(Config.DATABASE_NAME)
+        self.database: Database = self.client.get_database(Config.DATABASE_NAME)
    
     def get_collection(self, name: str) -> Collection:
         """Utility for getting a collection handle by name"""
@@ -58,6 +57,15 @@ class Document(metaclass=ABCMeta):
     @property
     @abstractmethod
     def collection(self) -> Collection: pass
+
+    @property
+    def audit_collection(self) -> Collection:
+        if col := getattr(self, '_audit_collection', None):
+            return col
+
+        self._audit_collection = self.collection.database.get_collection('__' + self.collection.name)
+        
+        return self._audit_collection
 
     @property
     @abstractmethod
@@ -75,24 +83,47 @@ class Document(metaclass=ABCMeta):
         if data := cls.collection.find_one(query):
             return cls(data)
 
-    def commit(self) -> InsertOneResult | UpdateResult:
+    def commit(self) -> list[InsertOneResult | UpdateResult, UpdateResult]:
         if not hasattr(self, 'data') or self.data is None:
             raise Exception('Attribute "data" not set')
 
         self.model(**self.data)
         to_commit = {k: self.data[k] for k in self.model.model_fields if k in self.data}
-        
+        results = []
+
         if _id := self.data.get('_id'):
-            q = {'_id': _id}
-            result = self.collection.replace_one(q, to_commit)
+            filter = {'_id': _id}
+            results.append(self.collection.replace_one(filter, to_commit))
         else:
             result = self.collection.insert_one(to_commit)
             self.data['_id'] = result.inserted_id
+            results.append(result)
 
-        return result
+        results.append(
+            self.audit_collection.update_one(
+                filter={'_id': self.data['_id']},
+                update={'$set': {'_id': self.data['_id']}, '$push': {'history': {'updated': datetime.now(timezone.utc), 'data': self.data}}},
+                upsert=True
+            )
+        )
 
-    #@abstractmethod
-    def delete(self) -> Self: pass
+        return results
+
+    def delete(self) -> list[UpdateResult, DeleteResult]:
+        if self.data.get('_id') is None:
+            raise Exception('Document can\'t be deleted without field "_id" of attribute "data" being set')
+        
+        results = [
+            self.audit_collection.update_one(
+                filter={'_id': self.data['_id']},
+                update={'$set': {'deleted': datetime.now(timezone.utc)}}
+            ),
+            self.collection.delete_one({'_id': self.data['_id']})
+        ]
+
+        del self.data['_id']
+
+        return results
 
 ### User system
 
@@ -106,7 +137,9 @@ class User(Document, UserMixin):
 
     @classmethod
     @validate_call
-    def add_user(cls, user_id: str, password: str) -> Self:
+    def add_user(cls, user_id: str, password: str) -> list[InsertOneResult, UpdateResult]:
+        """Add user to the database"""
+
         if cls.collection.find_one({'userId': user_id}):
             raise Exception(f'User "{user_id}" already exists')
 
@@ -116,24 +149,32 @@ class User(Document, UserMixin):
         return self
     
     def get_id(self) -> str:
+        """Required by Flask_login"""
         return self.data.get('userId')
 
-    def commit(self) -> InsertOneResult | UpdateResult:
+    def commit(self) -> list[UpdateResult]:
+        """Prevents a new user from being added or a password being set without
+        dedicated methods, then calls `.commit` on the superclass"""
+
         if self.data.get('_id') is None:
             raise Exception('Can\'t add new user to the database with `User.commit`. Use `User.add_user`')
         elif existing := self.collection.find_one({'_id': self.data['_id']}):
-            if self.data.get('password_hash') != existing['password_hash']:
+            if self.data.get('passwordHash') != existing['passwordHash']:
                 raise Exception('Can\'t change password with `User.commit`. Use `User.update_password`')
 
         return super().commit()
 
-    @validate_call
-    def update_password(self, new_password: str) -> InsertOneResult | UpdateResult:
+    @validate_call()
+    def update_password(self, new_password: str) -> list[UpdateResult]:
+        """Update user's encrypted password in the database"""
+
         self.data['passwordHash'] = generate_password_hash(new_password)
         
         return super().commit()
 
     def login(self, password: str) -> bool:
+        """Calls the Flask-Login `login_user` function"""
+
         if self.data.get('_id') is None:
             raise Exception('User is not in the system')
 
