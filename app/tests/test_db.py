@@ -13,12 +13,15 @@ def test_DB(db):
 def test_Document(db):
     from pymongo.results import InsertOneResult, UpdateResult
     from pydantic import ValidationError
-    from app.db import DB, Document
+    from app.db import Document
     from app.models import Base
+
+    with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+        Document()
 
     class TestClass(Document): pass
 
-    with pytest.raises(TypeError, match="Can't instantiate abstract class TestClass"): 
+    with pytest.raises(TypeError, match="Can't instantiate abstract class"):
         TestClass()
 
     del TestClass
@@ -54,7 +57,7 @@ def test_Document(db):
     audit3 = get_audit(_id)
     assert isinstance(audit3['deleted'], datetime)
    
-def test_User(db):
+def test_User(client, db):
     from app.db import Document, User
     from pymongo.results import UpdateResult
     from werkzeug.security import check_password_hash
@@ -62,7 +65,7 @@ def test_User(db):
     
     User.collection = db.client.get_database(Config.DATABASE_NAME).get_collection('users')
 
-    with pytest.raises(Exception, match='Can\'t add new user to the database with `User.commit`'):
+    with pytest.raises(Exception, match="Can't add new user to the database with `User.commit`"):
         User({'userId': 'x'}).commit()
 
     assert isinstance(User.add_user('test', 'pw'), Document | User | UserMixin)
@@ -70,7 +73,7 @@ def test_User(db):
     hash = user.data['passwordHash']
     assert check_password_hash(hash, 'pw')
 
-    with pytest.raises(Exception, match='Can\'t change password with `User.commit`'):
+    with pytest.raises(Exception, match="Can't change password with `User.commit`"):
         user.data['passwordHash'] = 'illegal'
         user.commit()
 
@@ -82,3 +85,7 @@ def test_User(db):
 
     with pytest.raises(RuntimeError, match='Working outside of application context'):
         user.login('new_pw')
+
+    assert client.post('/login', data={'userId': '', 'password': ''}).status_code == 404
+    assert client.post('/login', data={'userId': 'test', 'password': 'pw'}).status_code == 401
+    assert client.post('/login', data={'userId': 'test', 'password': 'new_pw'}).status_code == 302

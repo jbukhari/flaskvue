@@ -2,9 +2,9 @@
 # here. Routes that return data are defined in api.py and imported via
 # Blueprint.
 
-import json
 from secrets import token_hex
 from pathlib import Path
+from urllib.parse import urlparse, parse_qs
 from flask import Flask, send_file, render_template, abort, request, Response, redirect, url_for
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from flask_cors import CORS
@@ -23,6 +23,7 @@ INTERNAL_JS = getattr(Config, 'INTERNAL_JS', False)
 INTERNAL_JS_DIR = getattr(Config, 'INTERNAL_JS_PATH', None) if INTERNAL_JS else None
 LOGIN_MANAGER = LoginManager()
 LOGIN_MANAGER.init_app(APP)
+LOGIN_MANAGER.login_view = 'login'
 
 @LOGIN_MANAGER.user_loader
 def load_user(user_id):
@@ -64,7 +65,7 @@ def login():
     if Config.TESTING or Config.DEV:
         APP.secret_key = token_hex(24)
     elif not Config.SECRET_KEY:
-        raise Exception('Environment variable "SECRET_KEY" required  to start user sessions')
+        raise Exception('Environment variable "SECRET_KEY" required to start user sessions')
 
     # POST
     data = request.form.to_dict()
@@ -75,10 +76,20 @@ def login():
         if not user.login(password):
             abort(401, 'Incorrect password')
 
-        this = url_for("login", _external=True)
-        ref = request.referrer
-            
-        return redirect(ref if ref and (ref != this) else url_for('index'))
+        ref = urlparse(request.referrer)
+
+        if next := parse_qs(ref.query).get('next'):
+            if next_url := next.pop():
+                check = urlparse(next_url)
+
+                if check.scheme in ['http', 'https'] and check.netloc == ref.netloc:
+                    # Ensures the redirect is known
+                    return redirect(next_url) 
+            else:
+                abort(400)
+        else:
+            return redirect('/')
+        
     else:
         abort(404, 'User not found')
 
@@ -112,3 +123,10 @@ def create_user():
     login_user(user)
 
     return redirect(url_for('index'))
+
+@APP.route('/account')
+@login_required
+def account():
+    created_date = current_user.audit_collection.find_one({'_id': current_user.data['_id']})['history'][0]['updated']
+
+    return f'{current_user.get_id()}<br>created: {created_date.astimezone().isoformat()}'

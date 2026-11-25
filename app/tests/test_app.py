@@ -16,7 +16,6 @@ def test_login(client, user):
 
 def test_logout(client_logged_in):
     client = client_logged_in
-    
     assert client.post('/login').status_code == 200
     assert client.get('/logout').status_code == 302
     assert client.post('/login').status_code == 404
@@ -26,3 +25,9 @@ def test_create_user(client):
     assert client.post('/create_user', data={'userId': 'test', 'password': ''}).status_code == 400
     assert client.post('/create_user', data={'userId': 'test', 'password': 'pw', 'confirmPassword': ''}).status_code == 400
     assert client.post('/create_user', data={'userId': 'test', 'password': 'test', 'confirmPassword': 'test'}).status_code == 302
+
+def test_require_login(client_logged_in):
+    client = client_logged_in
+    assert client.get('/account').status_code == 200 
+    client.get('/logout')
+    assert client.get('/account').status_code == 302

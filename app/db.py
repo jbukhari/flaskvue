@@ -15,7 +15,7 @@ from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 from mongomock import MongoClient as MockClient, Collection as MockCollection
 from pydantic import BaseModel, ConfigDict, validate_call
 from flask_login import UserMixin, login_user
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug import security
 from app.config import Config
 from app import models
 
@@ -143,7 +143,7 @@ class User(Document, UserMixin):
         if cls.collection.find_one({'userId': user_id}):
             raise Exception(f'User "{user_id}" already exists')
 
-        self = cls(data={'userId': user_id, 'passwordHash': generate_password_hash(password)})
+        self = cls(data={'userId': user_id, 'passwordHash': security.generate_password_hash(password)})
         super(cls, self).commit()
 
         return self
@@ -168,7 +168,7 @@ class User(Document, UserMixin):
     def update_password(self, new_password: str) -> list[UpdateResult]:
         """Update user's encrypted password in the database"""
 
-        self.data['passwordHash'] = generate_password_hash(new_password)
+        self.data['passwordHash'] = security.generate_password_hash(new_password)
         
         return super().commit()
 
@@ -178,7 +178,7 @@ class User(Document, UserMixin):
         if self.data.get('_id') is None:
             raise Exception('User is not in the system')
 
-        if check_password_hash(self.data['passwordHash'], password):
+        if security.check_password_hash(self.data['passwordHash'], password):
             return login_user(self)
         
         return False
