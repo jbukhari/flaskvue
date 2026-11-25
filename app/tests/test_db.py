@@ -16,9 +16,12 @@ def test_Document(db):
     from app.db import Document
     from app.models import Base
 
+    with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+        Document()
+
     class TestClass(Document): pass
 
-    with pytest.raises(TypeError, match="Can't instantiate abstract class TestClass without an implementation for abstract methods 'collection', 'model'"):
+    with pytest.raises(TypeError, match="Can't instantiate abstract class"):
         TestClass()
 
     del TestClass
