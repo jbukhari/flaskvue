@@ -2,9 +2,12 @@
 # can optionally be set using environment variables, which are stored in the
 # Config object.
 
-import sys, os, pathlib, secrets
+import os
+import pathlib
+import sys
 
-class Config():
+
+class Config:
     APP = None # set when the app starts
     SECRET_KEY = None # set by environment variable
     TESTING = 'pytest' in sys.modules

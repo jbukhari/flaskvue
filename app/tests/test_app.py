@@ -1,5 +1,3 @@
-import pytest, re
-from app.config import Config
 
 def test_base(client):
     assert client.get('/').status_code == 200

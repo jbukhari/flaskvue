@@ -1,7 +1,10 @@
 # Custom Flask commands defined in blueprints. Run with `flask cmd <command>`.
 
-import os, click, requests
+import os
+
+import requests
 from flask import Blueprint
+
 from app.config import Config
 
 commands = Blueprint('cmd', __name__)

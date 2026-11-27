@@ -1,18 +1,23 @@
 
-import pytest
 from datetime import datetime
+
+import pytest
+
 from app.config import Config
+
 
 def test_DB(db):
     from mongomock import MongoClient
+
     from app.db import DB
 
     assert isinstance(db, DB)
     assert isinstance(db.client, MongoClient)
 
 def test_Document(db):
-    from pymongo.results import InsertOneResult, UpdateResult
     from pydantic import ValidationError
+    from pymongo.results import InsertOneResult, UpdateResult
+
     from app.db import Document
     from app.models import Base
 
@@ -43,7 +48,7 @@ def test_Document(db):
     _id = doc.data.get('_id')
     retrieved = TestClass.from_query({'_id': _id})
     assert retrieved.data['_id'] == _id
-    def get_audit(__id): return retrieved.audit_collection.find_one({'_id': __id})
+    def get_audit(__id, /): return retrieved.audit_collection.find_one({'_id': __id})
     audit1 = get_audit(_id)
     assert audit1['history'][0]['data'] == retrieved.data
     retrieved.data['test_field'] = 'updated'
@@ -58,10 +63,11 @@ def test_Document(db):
     assert isinstance(audit3['deleted'], datetime)
    
 def test_User(client, db):
-    from app.db import Document, User
+    from flask_login import UserMixin
     from pymongo.results import UpdateResult
     from werkzeug.security import check_password_hash
-    from flask_login import UserMixin
+
+    from app.db import Document, User
     
     User.collection = db.client.get_database(Config.DATABASE_NAME).get_collection('users')
 
@@ -78,7 +84,7 @@ def test_User(client, db):
         user.commit()
 
     result = user.update_password('new_pw')
-    assert all([isinstance(x, UpdateResult) for x in result])
+    assert all(isinstance(x, UpdateResult) for x in result)
     new_hash = user.data['passwordHash'] 
     assert new_hash != hash
     assert check_password_hash(new_hash, 'new_pw')

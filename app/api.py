@@ -2,8 +2,10 @@
 # Blueprint.
 
 import json
-from flask import abort, request, jsonify, Response, Blueprint
-from flask_restx import Api, Namespace, Resource, fields
+
+from flask import Blueprint, Response, abort, jsonify, request
+from flask_restx import Api, Resource
+
 from app import models
 
 API = Api(Blueprint('api', __name__), version='1.0', doc='/')
