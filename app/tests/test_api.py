@@ -1,6 +1,7 @@
 # API route tests. Fixtures are defined in conftest.py.
 
-import pytest, json
+import json
+
 from flask.testing import FlaskClient
 
 PRE = '/api/v1'

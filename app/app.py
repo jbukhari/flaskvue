@@ -2,16 +2,31 @@
 # here. Routes that return data are defined in api.py and imported via
 # Blueprint.
 
-from secrets import token_hex
 from pathlib import Path
-from urllib.parse import urlparse, parse_qs
-from flask import Flask, send_file, render_template, abort, request, Response, redirect, url_for
-from flask_login import LoginManager, current_user, login_required, login_user, logout_user
+from secrets import token_hex
+from urllib.parse import parse_qs, urlparse
+
+from flask import (
+   Flask,
+   abort,
+   redirect,
+   render_template,
+   request,
+   url_for,
+)
 from flask_cors import CORS
-from app.config import Config
-from app.db import DB, User
-from app.commands import commands
+from flask_login import (
+   LoginManager,
+   current_user,
+   login_required,
+   login_user,
+   logout_user,
+)
+
 from app.api import API
+from app.commands import commands
+from app.config import Config
+from app.db import User
 
 ### Setup
 Config.app = APP = Flask(__name__)

@@ -1,9 +1,9 @@
 # Models are defined as Pydantic models but can be converted to Flask-RESTX
 # model objects using the provided methods.
 
-from pydantic import BaseModel
-from flask_restx import Api, fields
+from flask_restx import fields
 from flask_restx.model import Model, SchemaModel
+from pydantic import BaseModel
 
 ### Base
 

@@ -1,27 +1,31 @@
 # All direct interaction with the database can be done here using subclasses of
 # the Document abstract base class.
 
-import sys, os
-from warnings import warn
-from datetime import datetime, timezone
+import os
+import sys
 from abc import ABCMeta, abstractmethod
-from typing import Self
 from collections.abc import Iterable
 from dataclasses import dataclass
-from pymongo import MongoClient, CursorType
-from pymongo.database import Database
-from pymongo.collection import Collection
-from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
-from mongomock import MongoClient as MockClient, Collection as MockCollection
-from pydantic import BaseModel, ConfigDict, validate_call
+from datetime import UTC, datetime
+from typing import Self
+from warnings import warn
+
 from flask_login import UserMixin, login_user
+from mongomock import Collection as MockCollection
+from mongomock import MongoClient as MockClient
+from pydantic import BaseModel, validate_call
+from pymongo import MongoClient
+from pymongo.collection import Collection
+from pymongo.database import Database
+from pymongo.results import DeleteResult, InsertOneResult, UpdateResult
 from werkzeug import security
-from app.config import Config
+
 from app import models
+from app.config import Config
 
 DBVAR = 'DATABASE_CONNECTION_STRING'
 
-class DB():
+class DB:
     """Interface to the database."""
 
     connected: bool
@@ -29,8 +33,8 @@ class DB():
     database: Database  
 
     def __init__(self):
-        f"""Connects to the database using the connection string provided by
-        the environment variable "{DBVAR}", if it exists. Otherwise connect to
+        """Connects to the database using the connection string provided by
+        the designated environment variable, if it exists. Otherwise connect to
         a Mongomock DB"""
         
         self.connected = False
@@ -102,7 +106,7 @@ class Document(metaclass=ABCMeta):
         results.append(
             self.audit_collection.update_one(
                 filter={'_id': self.data['_id']},
-                update={'$set': {'_id': self.data['_id']}, '$push': {'history': {'updated': datetime.now(timezone.utc), 'data': self.data}}},
+                update={'$set': {'_id': self.data['_id']}, '$push': {'history': {'updated': datetime.now(UTC), 'data': self.data}}},
                 upsert=True
             )
         )
@@ -116,7 +120,7 @@ class Document(metaclass=ABCMeta):
         results = [
             self.audit_collection.update_one(
                 filter={'_id': self.data['_id']},
-                update={'$set': {'deleted': datetime.now(timezone.utc)}}
+                update={'$set': {'deleted': datetime.now(UTC)}}
             ),
             self.collection.delete_one({'_id': self.data['_id']})
         ]
@@ -155,12 +159,14 @@ class User(Document, UserMixin):
     def commit(self) -> list[UpdateResult]:
         """Prevents a new user from being added or a password being set without
         dedicated methods, then calls `.commit` on the superclass"""
-
+        
         if self.data.get('_id') is None:
             raise Exception('Can\'t add new user to the database with `User.commit`. Use `User.add_user`')
-        elif existing := self.collection.find_one({'_id': self.data['_id']}):
-            if self.data.get('passwordHash') != existing['passwordHash']:
-                raise Exception('Can\'t change password with `User.commit`. Use `User.update_password`')
+
+        existing = self.collection.find_one({'_id': self.data['_id']})
+
+        if existing and self.data.get('passwordHash') != existing['passwordHash']: 
+            raise Exception('Can\'t change password with `User.commit`. Use `User.update_password`')
 
         return super().commit()
 
